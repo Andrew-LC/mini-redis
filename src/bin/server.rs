@@ -2,8 +2,10 @@ use tokio::net::TcpListener;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use tokio::net::TcpStream;
-use mini_redis::{Connection, Frame};
+use mini_redis::Frame;
 use bytes::Bytes;
+
+use mini_rediz::Connection;
 
 #[tokio::main]
 async fn main() {

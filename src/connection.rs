@@ -55,7 +55,7 @@ impl Connection {
 	}
     }
 
-    fn parse_frame(&mut self) {
+    pub fn parse_frame(&mut self) {
 	let mut buf = Cursor::new(&self.buffer[..]);
 
 	match Frame::check(&mut buf) {
