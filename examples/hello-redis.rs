@@ -1,3 +1,4 @@
+use bytes::Bytes;
 use mini_redis::{client, Result};
 
 #[tokio::main]
@@ -7,11 +8,14 @@ async fn main() -> Result<()> {
 
     // Set the key "hello" with value "world"
     client.set("hello", "world".into()).await?;
+    client.set("seven", Bytes::from(vec![7, 8])).await?;
 
     // Get key "hello"
     let result = client.get("hello").await?;
+    let result2 = client.get("seven").await?;
 
     println!("got value from the server; result={:?}", result);
+    println!("got value from the server; result={:?}", result2);
 
     Ok(())
 }

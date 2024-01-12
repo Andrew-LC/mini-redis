@@ -20,7 +20,6 @@ enum Command {
 /// the command response back to the requester.
 type Responder<T> = oneshot::Sender<mini_redis::Result<T>>;
 
-
 #[tokio::main]
 async fn main() {
     let (tx, mut rx) = mpsc::channel(32);
@@ -32,15 +31,13 @@ async fn main() {
 
 	// Start receiving messages
 	while let Some(cmd) = rx.recv().await {
-            use Command::*;
-
             match cmd {
-		Get { key, resp } => {
+		Command::Get { key, resp } => {
                     let res = client.get(&key).await;
 		    // Ignore errors
 		    let _ = resp.send(res);
 		}
-		Set { key, val, resp } => {
+		Command::Set { key, val, resp } => {
                     let res = client.set(&key, val).await;
 		    let _ = resp.send(res);
 		}

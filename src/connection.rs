@@ -6,6 +6,8 @@ use tokio::io::{self, AsyncReadExt, AsyncWriteExt};
 use tokio::io::BufWriter;
 use std::io::Cursor;
 
+// use crate::Frame;
+
 // Example of how the Frame would look like
 // enum Frame {
 //     Simple(String),
@@ -16,8 +18,9 @@ use std::io::Cursor;
 //     Array(Vec<Frame>),
 // }
 
+#[derive(Debug)]
 pub struct  Connection {
-    stream: TcpStream,
+    stream: BufWriter<TcpStream>,
     buffer: BytesMut,
 }
 
@@ -25,7 +28,7 @@ impl Connection {
     pub fn new(stream: TcpStream) -> Connection {
 	Connection {
 	    stream: BufWriter::new(stream),
-	    buffer: BytesMut::with_capacity(4096),
+	    buffer: BytesMut::with_capacity(4 * 1024),
 	}
     }
 
@@ -55,7 +58,7 @@ impl Connection {
 	}
     }
 
-    pub fn parse_frame(&mut self) {
+    pub fn parse_frame(&mut self) -> Result<Option<Frame>> {
 	let mut buf = Cursor::new(&self.buffer[..]);
 
 	match Frame::check(&mut buf) {
@@ -64,11 +67,11 @@ impl Connection {
 
 		buf.set_position(0);
 
-		let frame = Frame::parse(&mut buf);
+		let frame = Frame::parse(&mut buf)?;
 
 		self.buffer.advance(len);
 
-		OK(Some(frame))
+		Ok(Some(frame))
 	    },
 	    Err(Incomplete) => Ok(None),
 	    Err(e) => Err(e.into()),
@@ -107,8 +110,24 @@ impl Connection {
             Frame::Array(_val) => unimplemented!(),
 	}
 
-	self.stream.flush().await;
+	let _ = self.stream.flush().await;
 
 	Ok(())
+    }
+
+    /// Write a decimal frame to the stream
+    async fn write_decimal(&mut self, val: u64) -> io::Result<()> {
+        use std::io::Write;
+
+        // Convert the value to a string
+        let mut buf = [0u8; 12];
+        let mut buf = Cursor::new(&mut buf[..]);
+        write!(&mut buf, "{}", val)?;
+
+        let pos = buf.position() as usize;
+        self.stream.write_all(&buf.get_ref()[..pos]).await?;
+        self.stream.write_all(b"\r\n").await?;
+
+        Ok(())
     }
 }
